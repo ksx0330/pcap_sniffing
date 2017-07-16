@@ -21,11 +21,10 @@ void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	int src_ip[4] = {0};
 
 	int i;
-	int temp = 0;
 
 	for (i=0; i<4; i++) {
-		dest_ip[i] = ((*(packet+i+28)) & 0xff);
-		src_ip[i] = ((*(packet+i+28+4)) & 0xff);
+		dest_ip[i] = ((*(packet+i+26)) & 0xff);
+		src_ip[i] = ((*(packet+i+26+4)) & 0xff);
 	}
 
 	printf("src_ip : ");
@@ -81,6 +80,7 @@ void show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 void show_hex_code(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 	int i;
 
+	printf(" ");
 	for (i=0; i<(*header).len; i++) {
 		printf("%.2x ", *(packet+i)&0xff);
 
