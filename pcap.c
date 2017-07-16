@@ -12,10 +12,15 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 	printf("\ncount : %d\n", count);
 	count++;
 
+	printf("------------------------------\n");
 	show_addr(args, header, packet);
 	show_ip(args, header, packet);
 	show_port(args, header, packet);
+	printf("------------------------------\n");
+
 	show_hex_code(args, header, packet);
+
+	printf("------------------------------\n");
 }
 	
 
