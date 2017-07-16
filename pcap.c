@@ -13,7 +13,20 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 
 	show_addr(args, header, packet);
 	show_ip(args, header, packet);
+	show_port(args, header, packet);
 	show_hex_code(args, header, packet);
+}
+
+void show_port (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+	int dest_port;
+	int src_port;
+
+	src_port = ((*(packet+34)) & 0xff)*0x100 + ((*(packet+35)) & 0xff);
+	dest_port = ((*(packet+36)) & 0xff)*0x100 + ((*(packet+37)) & 0xff);
+
+	printf("src_port : %d\n", src_port);
+
+	printf("dest_port : %d\n", dest_port);
 }
 
 void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
