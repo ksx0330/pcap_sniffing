@@ -28,7 +28,7 @@ void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 		src_ip[i] = ((*(packet+i+28+4)) & 0xff);
 	}
 
-	printf("dest_address : ");
+	printf("src_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
 			printf("%d : ", dest_ip[i]);
@@ -36,7 +36,7 @@ void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			printf("%d\n", dest_ip[i]);
 	}
 
-	printf("src_address : ");
+	printf("dest_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
 			printf("%d : ", src_ip[i]);
@@ -59,20 +59,20 @@ void show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 		src_addr[i] = ((*(packet+i+6)) & 0xff);
 	}
 
-	printf("dest_address : ");
-	for (i=0; i<6; i++) {
-		if (i < 5)
-			printf("%.2x : ", dest_addr[i]);
-		else
-			printf("%.2x\n", dest_addr[i]);
-	}
-
 	printf("src_address : ");
 	for (i=0; i<6; i++) {
 		if (i < 5)
 			printf("%.2x : ", src_addr[i]);
 		else
 			printf("%.2x\n", src_addr[i]);
+	}
+
+	printf("dest_address : ");
+	for (i=0; i<6; i++) {
+		if (i < 5)
+			printf("%.2x : ", dest_addr[i]);
+		else
+			printf("%.2x\n", dest_addr[i]);
 	}
 
 	printf("\n");
