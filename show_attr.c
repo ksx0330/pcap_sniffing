@@ -7,7 +7,7 @@
 #define UDP 40
 
 
-int show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+int show_addr (const u_char *packet) {
 	int dest_addr[6] = {0};
 	int src_addr[6] = {0};
 	int ether_type;
@@ -62,7 +62,7 @@ int show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *pac
 	printf("\n");
 }
 
-int show_ipv4_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+int show_ipv4_ip (const u_char *packet) {
 	int dest_ip[4] = {0};
 	int src_ip[4] = {0};
 	int protocol = ((*(packet+23)) & 0xff);
@@ -77,7 +77,7 @@ int show_ipv4_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("Src_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
-			printf("%d : ", src_ip[i]);
+			printf("%d.", src_ip[i]);
 		else
 			printf("%d\n", src_ip[i]);
 	}
@@ -85,7 +85,7 @@ int show_ipv4_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("Dest_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
-			printf("%d : ", dest_ip[i]);
+			printf("%d.", dest_ip[i]);
 		else
 			printf("%d\n", dest_ip[i]);
 	}
@@ -101,7 +101,7 @@ int show_ipv4_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("\n");
 }
 
-void show_ark_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+void show_ark_ip (const u_char *packet) {
 	int sender_ip[4] = {0};
 	int target_ip[4] = {0};
 
@@ -115,7 +115,7 @@ void show_ark_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("Src_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
-			printf("%d : ", sender_ip[i]);
+			printf("%d.", sender_ip[i]);
 		else
 			printf("%d\n", sender_ip[i]);
 	}
@@ -123,7 +123,7 @@ void show_ark_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("Dest_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
-			printf("%d : ", target_ip[i]);
+			printf("%d.", target_ip[i]);
 		else
 			printf("%d\n", target_ip[i]);
 	}
@@ -131,7 +131,7 @@ void show_ark_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	printf("\n");
 }
 
-void show_port (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+void show_port (const u_char *packet) {
 	int dest_port;
 	int src_port;
 
@@ -144,11 +144,17 @@ void show_port (u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 }
 
 void show_data (u_char *args, const struct pcap_pkthdr *header, const u_char *packet, int head_size) {
-	int i;
+	int i, tmp;
 
 	printf("Data Code : \n ");
 	for (i=head_size; i<(*header).len; i++) {
 		printf("%.2x ", *(packet+i)&0xff);
+		tmp++;
+
+		if (tmp%16 == 15)
+			printf("\n");
+		if (tmp%8 == 7)
+			printf(" ");
 	}
 
 	printf("\n");

@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include "show_attr.h"
 
-#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
-
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
 #define IPV4 10
@@ -20,19 +18,22 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 	count++;
 
 	printf("------------------------------\n");
-	etype = show_addr(args, header, packet);
+	etype = show_addr(packet);
 	if (etype == IPV4) {
-		protocol = show_ipv4_ip(args, header, packet);
+		protocol = show_ipv4_ip(packet);
 		
 		if (protocol == TCP) {
-			show_port(args, header, packet);
-			printf("------------------------------\n");
+			show_port(packet);
 
-			show_data(args, header, packet, (((*(packet+46)) & 0xff)/4 + 34));
+			if ((((*(packet+46)) & 0xff)/4 + 34) != (*header).len) {
+				printf("------------------------------\n");
 
-			printf("------------------------------\n");
+				show_data(args, header, packet, (((*(packet+46)) & 0xff)/4 + 34));
+
+				printf("------------------------------\n");
+			}
 		} else if (protocol == UDP) {
-			show_port(args, header, packet);
+			show_port(packet);
 			printf("------------------------------\n");
 
 			show_data(args, header, packet, 42);
@@ -44,7 +45,7 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 
 		printf("------------------------------\n");
 	} else if (etype == ARK) {
-		show_ark_ip(args, header, packet);
+		show_ark_ip(packet);
 		printf("------------------------------\n");
 
 		show_hex_code(args, header, packet);
