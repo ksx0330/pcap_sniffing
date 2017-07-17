@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "show_attr.h"
 
+#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
+
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
 #define IPV4 10
@@ -26,7 +28,7 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 			show_port(args, header, packet);
 			printf("------------------------------\n");
 
-			show_data(args, header, packet, 54);
+			show_data(args, header, packet, (((*(packet+46)) & 0xff)/4 + 34));
 
 			printf("------------------------------\n");
 		} else if (protocol == UDP) {

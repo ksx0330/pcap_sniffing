@@ -93,7 +93,7 @@ int show_ipv4_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *
 	if (protocol == 0x6) {
 		printf("Protocol : TCP\n");
 		return TCP;
-	} else if (protocol == 0x17) {
+	} else if (protocol == 0x11) {
 		printf("Protocol : UDP\n");
 		return UDP;
 	}
