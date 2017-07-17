@@ -76,6 +76,17 @@ void show_port (u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	printf("Dest_port : %d\n", dest_port);
 }
 
+void show_data (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+	int i;
+
+	printf("Data Code : \n ");
+	for (i=54; i<(*header).len; i++) {
+		printf("%x", *(packet+i)&0xff);
+	}
+
+	printf("\n");
+}
+
 void show_hex_code(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 	int i;
 

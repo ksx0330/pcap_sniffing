@@ -18,6 +18,10 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 	show_port(args, header, packet);
 	printf("------------------------------\n");
 
+	show_data(args, header, packet);
+
+	printf("------------------------------\n");
+
 	show_hex_code(args, header, packet);
 
 	printf("------------------------------\n");
@@ -29,7 +33,7 @@ int main (int argc, char **argv) {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *handle;
 
-	char filter_exp[] = "ip";
+	char filter_exp[] = "port 80";
 	struct bpf_program fp;
 	bpf_u_int32 mask;
 	bpf_u_int32 net;
