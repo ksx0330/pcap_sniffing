@@ -1,9 +1,16 @@
 #include <pcap.h>
 #include "show_attr.h"
 
-void show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+#define IPV4 10
+#define ARK 20
+#define TCP 30
+#define UDP 40
+
+
+int show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 	int dest_addr[6] = {0};
 	int src_addr[6] = {0};
+	int ether_type;
 
 	int i;
 	int temp = 0;
@@ -13,26 +20,49 @@ void show_addr (u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 		src_addr[i] = ((*(packet+i+6)) & 0xff);
 	}
 
-	printf("Src_address : ");
-	for (i=0; i<6; i++) {
-		if (i < 5)
-			printf("%.2x : ", src_addr[i]);
-		else
-			printf("%.2x\n", src_addr[i]);
-	}
+	if ((((*(packet+12)) & 0xff)*0x100 + ((*(packet+13)) & 0xff)) == 0x800) {
+		printf("Ether_type = IPv4\n");
+		printf("Src_address : ");
+		for (i=0; i<6; i++) {
+			if (i < 5)
+				printf("%.2x : ", src_addr[i]);
+			else
+				printf("%.2x\n", src_addr[i]);
+		}
 
-	printf("Dest_address : ");
-	for (i=0; i<6; i++) {
-		if (i < 5)
-			printf("%.2x : ", dest_addr[i]);
-		else
-			printf("%.2x\n", dest_addr[i]);
-	}
+		printf("Dest_address : ");
+		for (i=0; i<6; i++) {
+			if (i < 5)
+				printf("%.2x : ", dest_addr[i]);
+			else
+				printf("%.2x\n", dest_addr[i]);
+		}
 
+		return IPV4;
+	} else if ((((*(packet+12)) & 0xff)*0x100 + ((*(packet+13)) & 0xff)) == 0x806) {
+		printf("Ether_type = ARK\n");
+		printf("Src_address : ");
+		for (i=0; i<6; i++) {
+			if (i < 5)
+				printf("%.2x : ", src_addr[i]);
+			else
+				printf("%.2x\n", src_addr[i]);
+		}
+
+		printf("Dest_address : ");
+		for (i=0; i<6; i++) {
+			if (i < 5)
+				printf("%.2x : ", dest_addr[i]);
+			else
+				printf("%.2x\n", dest_addr[i]);
+		}
+
+		return ARK;
+	}
 	printf("\n");
 }
 
-void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+int show_ipv4_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 	int dest_ip[4] = {0};
 	int src_ip[4] = {0};
 	int protocol = ((*(packet+23)) & 0xff);
@@ -40,11 +70,19 @@ void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 	int i;
 
 	for (i=0; i<4; i++) {
-		dest_ip[i] = ((*(packet+i+26)) & 0xff);
-		src_ip[i] = ((*(packet+i+26+4)) & 0xff);
+		src_ip[i] = ((*(packet+i+26)) & 0xff);
+		dest_ip[i] = ((*(packet+i+26+4)) & 0xff);
 	}
 
 	printf("Src_ip : ");
+	for (i=0; i<4; i++) {
+		if (i < 3)
+			printf("%d : ", src_ip[i]);
+		else
+			printf("%d\n", src_ip[i]);
+	}
+
+	printf("Dest_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
 			printf("%d : ", dest_ip[i]);
@@ -52,14 +90,43 @@ void show_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *pack
 			printf("%d\n", dest_ip[i]);
 	}
 
+	if (protocol == 0x6) {
+		printf("Protocol : TCP\n");
+		return TCP;
+	} else if (protocol == 0x17) {
+		printf("Protocol : UDP\n");
+		return UDP;
+	}
+
+	printf("\n");
+}
+
+void show_ark_ip (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+	int sender_ip[4] = {0};
+	int target_ip[4] = {0};
+
+	int i;
+
+	for (i=0; i<4; i++) {
+		sender_ip[i] = ((*(packet+i+28)) & 0xff);
+		target_ip[i] = ((*(packet+i+38)) & 0xff);
+	}
+
+	printf("Src_ip : ");
+	for (i=0; i<4; i++) {
+		if (i < 3)
+			printf("%d : ", sender_ip[i]);
+		else
+			printf("%d\n", sender_ip[i]);
+	}
+
 	printf("Dest_ip : ");
 	for (i=0; i<4; i++) {
 		if (i < 3)
-			printf("%d : ", src_ip[i]);
+			printf("%d : ", target_ip[i]);
 		else
-			printf("%d\n", src_ip[i]);
+			printf("%d\n", target_ip[i]);
 	}
-	printf("Protocol : %d\n", protocol);
 
 	printf("\n");
 }
@@ -76,12 +143,12 @@ void show_port (u_char *args, const struct pcap_pkthdr *header, const u_char *pa
 	printf("Dest_port : %d\n", dest_port);
 }
 
-void show_data (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
+void show_data (u_char *args, const struct pcap_pkthdr *header, const u_char *packet, int head_size) {
 	int i;
 
 	printf("Data Code : \n ");
-	for (i=54; i<(*header).len; i++) {
-		printf("%x", *(packet+i)&0xff);
+	for (i=head_size; i<(*header).len; i++) {
+		printf("%.2x ", *(packet+i)&0xff);
 	}
 
 	printf("\n");

@@ -5,26 +5,50 @@
 
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
+#define IPV4 10
+#define ARK 20
+#define TCP 30
+#define UDP 40
 
 void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 	static int count = 1;
+	int etype, protocol;
 
 	printf("\ncount : %d\n", count);
 	count++;
 
 	printf("------------------------------\n");
-	show_addr(args, header, packet);
-	show_ip(args, header, packet);
-	show_port(args, header, packet);
-	printf("------------------------------\n");
+	etype = show_addr(args, header, packet);
+	if (etype == IPV4) {
+		protocol = show_ipv4_ip(args, header, packet);
+		
+		if (protocol == TCP) {
+			show_port(args, header, packet);
+			printf("------------------------------\n");
 
-	show_data(args, header, packet);
+			show_data(args, header, packet, 54);
 
-	printf("------------------------------\n");
+			printf("------------------------------\n");
+		} else if (protocol == UDP) {
+			show_port(args, header, packet);
+			printf("------------------------------\n");
 
-	show_hex_code(args, header, packet);
+			show_data(args, header, packet, 42);
 
-	printf("------------------------------\n");
+			printf("------------------------------\n");
+		}
+
+		show_hex_code(args, header, packet);
+
+		printf("------------------------------\n");
+	} else if (etype == ARK) {
+		show_ark_ip(args, header, packet);
+		printf("------------------------------\n");
+
+		show_hex_code(args, header, packet);
+
+		printf("------------------------------\n");
+	}
 }
 	
 
@@ -33,7 +57,7 @@ int main (int argc, char **argv) {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t *handle;
 
-	char filter_exp[] = "port 80";
+	char filter_exp[] = "ip";
 	struct bpf_program fp;
 	bpf_u_int32 mask;
 	bpf_u_int32 net;
