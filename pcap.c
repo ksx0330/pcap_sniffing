@@ -1,12 +1,19 @@
 #include <pcap.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "show_attr.h"
 
 /* default snap length (maximum bytes per packet to capture) */
 #define SNAP_LEN 1518
 #define IPV4 10
-#define ARK 20
+#define ARP 20
 #define TCP 30
 #define UDP 40
 
@@ -35,6 +42,8 @@ struct sniff_ip {
 #define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
 
+typedef u_int tcp_seq;
+
 struct sniff_tcp {
         u_short th_sport;               /* source port */
         u_short th_dport;               /* destination port */
@@ -60,18 +69,18 @@ struct sniff_tcp {
 void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
 	static int count = 1;
 	int etype=0, protocol=0;
-	int size_ip, size_total;
+	int size_ip, size_tcp, size_total;
 	const struct sniff_ethernet * ethernet;
 	const struct sniff_ip * ip;
 	const struct sniff_tcp *tcp;
 
-	etherent = (sniff_ethernet*)(packet);
-	ip = (sniff_ip*)(packet + 14);
+	ethernet = (struct sniff_ethernet*)(packet);
+	ip = (struct sniff_ip*)(packet + 14);
 	size_ip = IP_HL(ip);
-	tcp = (sniff_tcp*)(packet + 14 + size_ip);
+	tcp = (struct sniff_tcp*)(packet + 14 + size_ip);
 	size_tcp = TH_OFF(tcp)*4;
 
-	size_total = ntohs(ip->len) + 14;
+	size_total = ntohs(ip->ip_len) + 14;
 
 	printf("\ncount : %d\n", count);
 	count++;
@@ -95,21 +104,14 @@ void got_packet (u_char *args, const struct pcap_pkthdr *header, const u_char *p
 			show_port(packet);
 			printf("------------------------------\n");
 
-			show_data(args, header, packet, 42);
+			show_data(args, header, packet, 42, size_total);
 
 			printf("------------------------------\n");
 		}
 
-		show_hex_code(args, header, packet);
-
 		printf("------------------------------\n");
-	} else if (etype == ARK) {
+	} else if (etype == ARP) {
 		show_ark_ip(packet);
-		printf("------------------------------\n");
-
-		show_hex_code(args, header, packet);
-
-		printf("------------------------------\n");
 	}
 }
 	

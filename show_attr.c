@@ -1,14 +1,23 @@
 #include <pcap.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "show_attr.h"
 
 #define IPV4 10
-#define ARK 20
+#define ARP 20
 #define TCP 30
 #define UDP 40
 
 struct sniff_ethernet {
-        u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
-        u_char  ether_shost[ETHER_ADDR_LEN];    /* source host address */
+        u_char  ether_dhost[16];    /* destination host address */
+        u_char  ether_shost[16];    /* source host address */
         u_short ether_type;                     /* IP? ARP? RARP? etc */
 };
 
@@ -30,6 +39,20 @@ struct sniff_ip {
 };
 #define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
+
+struct sniff_arp {
+	u_short arp_htype; /*hardware type*/
+	u_short arp_p; /*protocol*/
+	u_char arp_hsize; /*hardware size*/
+	u_char arp_psize; /*protocol size*/
+	u_short arp_opcode; /*opcode*/
+	u_char arp_smhost[16]; /*sender mac address*/
+	struct in_addr arp_sip; /*sender ip address*/
+	u_char arp_dmhost[16]; /*target mac address*/
+	struct in_addr arp_dip; /*target ip address*/
+};
+	
+typedef u_int tcp_seq;
 
 struct sniff_tcp {
         u_short th_sport;               /* source port */
@@ -53,94 +76,76 @@ struct sniff_tcp {
         u_short th_urp;                 /* urgent pointer */
 };
 
-int show_addr (const u_char *packet) {
-	int dest_addr[6] = {0};
-	int src_addr[6] = {0};
-	int ether_type;
+const struct sniff_ethernet * ethernet;
+const struct sniff_ip * ip;
+const struct sniff_arp * arp;
+const struct sniff_tcp * tcp;
 
+int show_addr (const u_char *packet) {
 	int i;
 	int temp = 0;
 
-	for (i=0; i<6; i++) {
-		dest_addr[i] = ((*(packet+i)) & 0xff);
-		src_addr[i] = ((*(packet+i+6)) & 0xff);
-	}
+	ethernet = (struct sniff_ethernet*)(packet);
 
 	if ((((*(packet+12)) & 0xff)*0x100 + ((*(packet+13)) & 0xff)) == 0x800) {
 		printf("Ether_type = IPv4\n");
 		printf("Src_address : ");
 		for (i=0; i<6; i++) {
 			if (i < 5)
-				printf("%.2x : ", src_addr[i]);
+				printf("%.2x : ", ethernet->ether_shost[i]);
 			else
-				printf("%.2x\n", src_addr[i]);
+				printf("%.2x\n", ethernet->ether_shost[i]);
 		}
 
 		printf("Dest_address : ");
 		for (i=0; i<6; i++) {
 			if (i < 5)
-				printf("%.2x : ", dest_addr[i]);
+				printf("%.2x : ", ethernet->ether_dhost[i]);
 			else
-				printf("%.2x\n", dest_addr[i]);
+				printf("%.2x\n", ethernet->ether_dhost[i]);
 		}
 
 		return IPV4;
 	} else if ((((*(packet+12)) & 0xff)*0x100 + ((*(packet+13)) & 0xff)) == 0x806) {
-		printf("Ether_type = ARK\n");
+		printf("Ether_type = ARP\n");
 		printf("Src_address : ");
 		for (i=0; i<6; i++) {
 			if (i < 5)
-				printf("%.2x : ", src_addr[i]);
+				printf("%.2x : ", ethernet->ether_shost[i]);
 			else
-				printf("%.2x\n", src_addr[i]);
+				printf("%.2x\n", ethernet->ether_shost[i]);
 		}
 
 		printf("Dest_address : ");
 		for (i=0; i<6; i++) {
 			if (i < 5)
-				printf("%.2x : ", dest_addr[i]);
+				printf("%.2x : ", ethernet->ether_dhost[i]);
 			else
-				printf("%.2x\n", dest_addr[i]);
+				printf("%.2x\n", ethernet->ether_dhost[i]);
 		}
 
-		return ARK;
+		return ARP;
 	}
 	printf("\n");
 	return 0;
 }
 
 int show_ipv4_ip (const u_char *packet) {
-	int dest_ip[4] = {0};
-	int src_ip[4] = {0};
-	int protocol = ((*(packet+23)) & 0xff);
-
 	int i;
+	char src_ip[100], dst_ip[100];
+	ip = (struct sniff_ip*)(packet + 14);
+	
+	inet_ntop(AF_INET, &(ip->ip_src), src_ip, 100);
+	inet_ntop(AF_INET, &(ip->ip_dst), dst_ip, 100);
 
-	for (i=0; i<4; i++) {
-		src_ip[i] = ((*(packet+i+26)) & 0xff);
-		dest_ip[i] = ((*(packet+i+26+4)) & 0xff);
-	}
+	printf("Src_ip : %s\n", src_ip);
 
-	printf("Src_ip : ");
-	for (i=0; i<4; i++) {
-		if (i < 3)
-			printf("%d.", src_ip[i]);
-		else
-			printf("%d\n", src_ip[i]);
-	}
+	printf("Dest_ip : %s\n", dst_ip);
 
-	printf("Dest_ip : ");
-	for (i=0; i<4; i++) {
-		if (i < 3)
-			printf("%d.", dest_ip[i]);
-		else
-			printf("%d\n", dest_ip[i]);
-	}
-
-	if (protocol == 0x6) {
+	if (ip->ip_p == 0x6) {
 		printf("Protocol : TCP\n");
 		return TCP;
-	} else if (protocol == 0x11) {
+	} else if (ip->ip_p == 0x11) {
 		printf("Protocol : UDP\n");
 		return UDP;
 	}
@@ -150,45 +155,30 @@ int show_ipv4_ip (const u_char *packet) {
 }
 
 void show_ark_ip (const u_char *packet) {
-	int sender_ip[4] = {0};
-	int target_ip[4] = {0};
-
 	int i;
+	char src_ip[100], dst_ip[100];
+	arp = (struct sniff_arp*)(packet + 14);
 
-	for (i=0; i<4; i++) {
-		sender_ip[i] = ((*(packet+i+28)) & 0xff);
-		target_ip[i] = ((*(packet+i+38)) & 0xff);
-	}
+	inet_ntop(AF_INET, &(arp->arp_sip), src_ip, 100);
+	inet_ntop(AF_INET, &(arp->arp_dip), dst_ip, 100);
 
-	printf("Src_ip : ");
-	for (i=0; i<4; i++) {
-		if (i < 3)
-			printf("%d.", sender_ip[i]);
-		else
-			printf("%d\n", sender_ip[i]);
-	}
+	printf("Src_ip : %s\n", src_ip);
 
-	printf("Dest_ip : ");
-	for (i=0; i<4; i++) {
-		if (i < 3)
-			printf("%d.", target_ip[i]);
-		else
-			printf("%d\n", target_ip[i]);
-	}
+	printf("Dest_ip : %s\n", dst_ip);
 
 	printf("\n");
 }
 
 void show_port (const u_char *packet) {
-	int dest_port;
-	int src_port;
+	int size_ip;
 
-	src_port = ((*(packet+34)) & 0xff)*0x100 + ((*(packet+35)) & 0xff);
-	dest_port = ((*(packet+36)) & 0xff)*0x100 + ((*(packet+37)) & 0xff);
+	ip = (struct sniff_ip*)(packet + 14);
+	size_ip = IP_HL(ip);
+	tcp = (struct sniff_tcp*)(packet + size_ip + 14);
 
-	printf("Src_port : %d\n", src_port);
+	printf("Src_port : %d\n", ntohs(tcp->th_sport));
 
-	printf("Dest_port : %d\n", dest_port);
+	printf("Dest_port : %d\n", ntohs(tcp->th_dport));
 }
 
 void show_data (u_char *args, const struct pcap_pkthdr *header, const u_char *packet, int head_size, int size_total) {
