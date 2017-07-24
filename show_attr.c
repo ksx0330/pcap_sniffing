@@ -16,8 +16,8 @@
 #define UDP 40
 
 struct sniff_ethernet {
-        u_char  ether_dhost[16];    /* destination host address */
-        u_char  ether_shost[16];    /* source host address */
+        u_char  ether_dhost[6];    /* destination host address */
+        u_char  ether_shost[6];    /* source host address */
         u_short ether_type;                     /* IP? ARP? RARP? etc */
 };
 
@@ -173,7 +173,7 @@ void show_port (const u_char *packet) {
 	int size_ip;
 
 	ip = (struct sniff_ip*)(packet + 14);
-	size_ip = IP_HL(ip);
+	size_ip = IP_HL(ip)*4;
 	tcp = (struct sniff_tcp*)(packet + size_ip + 14);
 
 	printf("Src_port : %d\n", ntohs(tcp->th_sport));
