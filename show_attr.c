@@ -46,9 +46,9 @@ struct sniff_arp {
 	u_char arp_hsize; /*hardware size*/
 	u_char arp_psize; /*protocol size*/
 	u_short arp_opcode; /*opcode*/
-	u_char arp_smhost[16]; /*sender mac address*/
+	u_char arp_smhost[6]; /*sender mac address*/
 	struct in_addr arp_sip; /*sender ip address*/
-	u_char arp_dmhost[16]; /*target mac address*/
+	u_char arp_dmhost[6]; /*target mac address*/
 	struct in_addr arp_dip; /*target ip address*/
 };
 	
